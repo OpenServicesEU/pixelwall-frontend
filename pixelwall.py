@@ -100,7 +100,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simplistic browser frontend for PixelWall.')
     parser.add_argument('--verbose', action='store_true', help='Be verbose')
     parser.add_argument('url', type=QUrl, help='The URL for the PixelWall master server')
-    parser.add_argument('tty', type=str, default='/dev/ttymxc3', help='TTY on which the SAM is connected')
+    parser.add_argument('tty', nargs='?', type=str, default=None, help='TTY on which the SAM is connected')
 
     args = parser.parse_args()
     app = QApplication(sys.argv)
