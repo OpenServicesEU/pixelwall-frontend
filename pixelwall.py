@@ -62,16 +62,17 @@ class Page(QWebPage):
         return "PixelWall Public Display Client"
 
 class FrontEnd(QWidget):
-    def __init__(self, url, tty, parent=None):
+    def __init__(self, url, tty=None, parent=None):
         super(FrontEnd, self).__init__(parent)
         self.setWindowTitle('PixelWall')
         self.page = Page()
         self.page.mainFrame().loadFinished.connect(self.loadFinished)
         self.page.mainFrame().javaScriptWindowObjectCleared.connect(self.javaScriptWindowObjectCleared)
 
-        self.serial = SerialReader(tty)
         self.hub = Hub()
-        self.serial.data_ready.connect(self.hub.serial)
+        if tty:
+            self.serial = SerialReader(tty)
+            self.serial.data_ready.connect(self.hub.serial)
 
         webView = QWebView()
         webView.setPage(self.page)
@@ -87,7 +88,7 @@ class FrontEnd(QWidget):
         self.setAutoFillBackground(True);
 
     def javaScriptWindowObjectCleared(self):
-        self.page.mainFrame().addToJavaScriptWindowObject("PixelWall", hub)
+        self.page.mainFrame().addToJavaScriptWindowObject("PixelWall", self.hub)
         print('javaScriptWindowObjectCleared has finished')
 
     def loadFinished(self):
