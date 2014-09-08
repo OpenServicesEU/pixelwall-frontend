@@ -1,0 +1,3 @@
+[submodule "sam/dht"]
+	path = sam/DHT
+	url = git@github.com:adafruit/DHT-sensor-library.git
