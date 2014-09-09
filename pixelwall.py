@@ -9,25 +9,37 @@ from PySide.QtCore import QUrl, QMargins, QObject, Signal, Slot, QThread
 from PySide.QtGui import QApplication, QGridLayout, QWidget
 from PySide.QtWebKit import QWebPage, QWebView, QWebSettings
 
-class SerialReader(QThread):
+logger = logging.getLogger(__name__)
 
-    data_ready = Signal(str)
+class SerialJsonReader(QThread):
+
+    message = Signal(str)
 
     def __init__(self, tty):
+        super(SerialJsonReader).__init__(self)
         self.connected = False
         self.serial = serial.Serial(tty, 115200, timeout=1)
-        super(SerialReader).__init__(self)
 
     def run(self):
         while self.connected:
             try:
                 text = self.serial.read(1)
                 if text != '':
-                    self.data_ready.emit(text)
+                    self.message.emit(text)
             except serial.SerialException as e:
                 self.connected = False
 
-class Hub(QObject):
+class MockSerialJsonReader(QThread):
+
+    on_message = Signal(str)
+
+    def run(self):
+        while True:
+            QThread.sleep(5)
+            print('Sending mock JSON data ...')
+            self.on_message.emit(json.dumps({'temperature': 23.5}))
+
+class DemoHub(QObject):
 
     on_client_event = Signal(str)
     on_actor_event = Signal(str)
@@ -36,22 +48,18 @@ class Hub(QObject):
     on_serial = Signal(str)
 
     def __init__(self):
-        super(Hub, self).__init__()
+        super(DemoHub, self).__init__()
 
     @Slot(str)
     def connect(self, data):
+        print(data)
         payload = json.loads(data)
         print(payload)
         self.on_client_event.emit(json.dumps(payload))
-        self.on_temperature.emit(23.99)
 
     @Slot(str)
     def disconnect(self, config):
         print(config)
-
-    @Slot(str)
-    def serial(self, data):
-        self.on_serial.emit(data)
 
 class Page(QWebPage):
 
@@ -62,6 +70,9 @@ class Page(QWebPage):
         return "PixelWall Public Display Client"
 
 class FrontEnd(QWidget):
+
+    bridges = {}
+
     def __init__(self, url, tty=None, parent=None):
         super(FrontEnd, self).__init__(parent)
         self.setWindowTitle('PixelWall')
@@ -69,10 +80,14 @@ class FrontEnd(QWidget):
         self.page.mainFrame().loadFinished.connect(self.loadFinished)
         self.page.mainFrame().javaScriptWindowObjectCleared.connect(self.javaScriptWindowObjectCleared)
 
-        self.hub = Hub()
+        self.bridges['pixelWallDemoHub'] = DemoHub()
         if tty:
-            self.serial = SerialReader(tty)
-            self.serial.data_ready.connect(self.hub.serial)
+            reader = SerialJsonReader(tty)
+        else:
+            reader = MockSerialJsonReader()
+        reader.finished.connect(reader.deleteLater)
+        reader.start()
+        self.bridges['pixelWallSerialJsonReader'] = reader
 
         webView = QWebView()
         webView.setPage(self.page)
@@ -88,7 +103,10 @@ class FrontEnd(QWidget):
         self.setAutoFillBackground(True);
 
     def javaScriptWindowObjectCleared(self):
-        self.page.mainFrame().addToJavaScriptWindowObject("PixelWall", self.hub)
+        for objname, bridge in self.bridges.items():
+            logger.info('Adding bridge: {0}', objname)
+            print('Adding bridge: {0}'.format(objname))
+            self.page.mainFrame().addToJavaScriptWindowObject(objname, bridge)
         print('javaScriptWindowObjectCleared has finished')
 
     def loadFinished(self):
@@ -98,11 +116,20 @@ class FrontEnd(QWidget):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simplistic browser frontend for PixelWall.')
-    parser.add_argument('--verbose', action='store_true', help='Be verbose')
     parser.add_argument('url', type=QUrl, help='The URL for the PixelWall master server')
     parser.add_argument('tty', nargs='?', type=str, default=None, help='TTY on which the SAM is connected')
 
+    parser.add_argument('-d','--debug',
+                           help='Print lots of debugging statements',
+                           action="store_const",dest="loglevel",const=logging.DEBUG,
+                           default=logging.WARNING
+                       )
+    parser.add_argument('-v','--verbose',
+                           help='Be verbose',
+                           action="store_const",dest="loglevel",const=logging.INFO
+                       )
     args = parser.parse_args()
+    logger.setLevel(args.loglevel)
     app = QApplication(sys.argv)
     basic = FrontEnd(args.url, args.tty)
     #basic.showFullScreen()
