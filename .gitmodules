@@ -1,3 +1,6 @@
 [submodule "sam/dht"]
 	path = sam/DHT
 	url = git@github.com:adafruit/DHT-sensor-library.git
+[submodule "sam/MFRC522"]
+	path = sam/MFRC522
+	url = git@github.com:miguelbalboa/rfid.git
