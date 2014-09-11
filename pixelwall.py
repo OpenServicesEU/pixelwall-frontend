@@ -132,6 +132,8 @@ if __name__ == '__main__':
     logger.setLevel(args.loglevel)
     app = QApplication(sys.argv)
     basic = FrontEnd(args.url, args.tty)
-    #basic.showFullScreen()
-    basic.show()
+    if args.level == logging.DEBUG:
+        basic.show()
+    else:
+        basic.showFullScreen()
     sys.exit(app.exec_())
