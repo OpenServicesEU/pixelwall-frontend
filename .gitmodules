@@ -1,3 +1,12 @@
 [submodule "sam/dht"]
 	path = sam/DHT
 	url = git@github.com:adafruit/DHT-sensor-library.git
+[submodule "sam/MFRC522"]
+	path = sam/MFRC522
+	url = git@github.com:miguelbalboa/rfid.git
+[submodule "sam/Ultrasonic"]
+	path = sam/Ultrasonic
+	url = git@github.com:JRodrigoTech/Ultrasonic-HC-SR04.git
+[submodule "sam/jJSON"]
+	path = sam/aJSON
+	url = git@github.com:interactive-matter/aJson.git
