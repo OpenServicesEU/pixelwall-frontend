@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
-from gi.repository import Gtk, Gdk, WebKit, GObject, Soup
+from gi.repository import Gtk
 from gi.repository.GdkPixbuf import Pixbuf
 
 class ServerView(Gtk.IconView):
@@ -19,3 +20,7 @@ class ServerView(Gtk.IconView):
     def add_server(self, name, address, port):
         pixbuf = Gtk.IconTheme.get_default().load_icon('gtk-network', 64, 0)
         self.store.append((pixbuf, name, address, port))
+
+    def remove_Server(self, name):
+        # TODO
+        pass

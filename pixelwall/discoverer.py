@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
 import dbus
@@ -5,9 +6,9 @@ import avahi
 
 from gi.repository import GObject
 
-class Discoverer(GObject.GObject):
+class Avahi(GObject.GObject):
     def __init__(self, stype, loop, *args, **kwargs):
-        super(Discoverer, self).__init__(*args, **kwargs)
+        super(Avahi, self).__init__(*args, **kwargs)
         bus = dbus.SystemBus(mainloop=loop)
         self.server = dbus.Interface(
             bus.get_object(

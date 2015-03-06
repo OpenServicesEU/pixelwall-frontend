@@ -1,22 +1,41 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
-from gi.repository import Gtk, Gdk, WebKit, GObject, Soup
+import os
+import ConfigParser
 
-from .webview import WebView
+from gi.repository import Gtk, Gdk
+from dbus.mainloop.glib import DBusGMainLoop
+
+from .webview import Browser
 from .servers import ServerView
+from .discoverer import Avahi
 
 class Display(Gtk.Window):
 
     def __init__(self, *args, **kwargs):
         super(Display, self).__init__(*args, **kwargs)
+        loop = DBusGMainLoop(set_as_default=True)
+        self.discoverer = Avahi('_pixelwall._tcp', loop)
+        self.discoverer.connect('newServer', self.add_server)
+        self.discoverer.connect('removeServer', self.remove_server)
         self.set_title("Pixelwall")
         #self.set_gravity(Gdk.Gravity.CENTER)
         #self.set_position(Gtk.WindowPosition.CENTER)
         #self.set_default_size(640, 480)
         self.connect("delete-event", Gtk.main_quit)
         self.fullscreen()
-        #inspector = webview.get_inspector()
-        #inspector.connect("inspect-web-view", self.activate_inspector, splitter)
+
+        self.config = ConfigParser.ConfigParser()
+        self.config.read(os.path.expanduser('~/.pixelwall.cfg'))
+        if self.config.has_section('Connection'):
+            uri = self.config.get('Connection', 'uri')
+            if uri:
+                self.load_uri(uri)
+                return
+        self.show_server_view()
+
+    def show_server_view(self):
         self.serverview = ServerView()
         self.serverview.connect("item-activated", self.selected_server)
         self.add(self.serverview)
@@ -29,24 +48,32 @@ class Display(Gtk.Window):
         address = model[item][2]
         port = model[item][3]
 
-        url = "http://%s:%i/" % (address, port)
-        print("You selected", name, url)
-        #proxy_uri = Soup.URI.new("http://127.0.0.1:8080")
-        #session = WebKit.get_default_session().set_property("proxy-uri")
-        #session.set_property("proxy-uri",proxy_uri)
+        uri = "http://%s:%i/" % (address, port)
+        print("You selected", name, uri)
+        if not self.config.has_section('Connection'):
+            self.config.add_section('Connection')
+        self.config.set('Connection', 'uri', uri)
+        with open(os.path.expanduser('~/.pixelwall.cfg'), 'wb') as configfile:
+            self.config.write(configfile)
+
         props= {}
-        for key in Gtk.ContainerClass.list_child_properties(type(self)):
-            props[key.name]= self.child_get_property(self.serverview, key.name)
+        #for key in Gtk.ContainerClass.list_child_properties(type(self)):
+            #props[key.name]= self.child_get_property(self.content, key.name)
 
         self.serverview.hide()
         self.remove(self.serverview)
-        self.webview = WebView()
+        self.serverview.destroy()
+
+        self.load_uri(uri)
+
+    def load_uri(self, uri):
+        self.webview = Browser()
         self.add(self.webview)
 
-        for name, value in props.iteritems():
-            self.child_set_property(self.webview, name, value)
+        #for name, value in props.iteritems():
+            #self.child_set_property(self.content, name, value)
         self.show_all()
-        self.webview.open("http://www.google.at")
+        self.webview.load_uri(uri)
 
     def add_server(self, sender, name, address, port):
         print("Adding %s (%s:%i)" % (name, address, port))
@@ -54,5 +81,6 @@ class Display(Gtk.Window):
 
     def remove_server(self, sender, name):
         print("Removing %s" % name)
+        #TODO
 
 
