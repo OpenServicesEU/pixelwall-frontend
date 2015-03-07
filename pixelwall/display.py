@@ -9,16 +9,16 @@ from dbus.mainloop.glib import DBusGMainLoop
 
 from .webview import Browser
 from .servers import ServerView
-from .discoverer import Avahi
+from .dbus import Avahi
 
 class Display(Gtk.Window):
 
     def __init__(self, *args, **kwargs):
         super(Display, self).__init__(*args, **kwargs)
         loop = DBusGMainLoop(set_as_default=True)
-        self.discoverer = Avahi('_pixelwall._tcp', loop)
-        self.discoverer.connect('newServer', self.add_server)
-        self.discoverer.connect('removeServer', self.remove_server)
+        avahi = Avahi('_pixelwall._tcp', loop)
+        avahi.connect('newServer', self.add_server)
+        avahi.connect('removeServer', self.remove_server)
         self.set_title("Pixelwall")
         #self.set_gravity(Gdk.Gravity.CENTER)
         #self.set_position(Gtk.WindowPosition.CENTER)
