@@ -9,33 +9,28 @@ from gi.repository import Gtk, Gdk
 from .webview import Browser
 from .servers import ServerView
 from .dbus import Avahi
+from .config import Config
 
 class Display(Gtk.Window):
 
     def __init__(self, loop, *args, **kwargs):
         super(Display, self).__init__(*args, **kwargs)
-        loop = DBusGMainLoop(set_as_default=True)
-        avahi = Avahi('_pixelwall._tcp', loop)
-        avahi.connect('newServer', self.add_server)
-        avahi.connect('removeServer', self.remove_server)
+
+        self.config = Config('/apps/pixelwall')
         self.set_title("Pixelwall")
         self.connect("delete-event", Gtk.main_quit)
         self.fullscreen()
 
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(os.path.expanduser('~/.pixelwall.cfg'))
-        if self.config.has_section('Connection'):
-            uri = self.config.get('Connection', 'uri')
-            if uri:
-                self.load_uri(uri)
-                return
-        self.show_server_view()
-
-    def show_server_view(self):
-        self.serverview = ServerView()
-        self.serverview.connect("item-activated", self.selected_server)
-        self.add(self.serverview)
-        self.show_all()
+        if self.config.uri:
+            self.load_uri(self.config.uri)
+        else:
+            avahi = Avahi('_pixelwall._tcp', loop)
+            avahi.connect('newServer', self.add_server)
+            avahi.connect('removeServer', self.remove_server)
+            self.serverview = ServerView()
+            self.serverview.connect("item-activated", self.selected_server)
+            self.add(self.serverview)
+            self.show_all()
 
     def selected_server(self, widget, item):
         model = widget.get_model()
@@ -46,15 +41,8 @@ class Display(Gtk.Window):
 
         uri = "http://%s:%i/" % (address, port)
         print("You selected", name, uri)
-        if not self.config.has_section('Connection'):
-            self.config.add_section('Connection')
-        self.config.set('Connection', 'uri', uri)
-        with open(os.path.expanduser('~/.pixelwall.cfg'), 'wb') as configfile:
-            self.config.write(configfile)
 
-        props= {}
-        #for key in Gtk.ContainerClass.list_child_properties(type(self)):
-            #props[key.name]= self.child_get_property(self.content, key.name)
+        self.config.uri = uri
 
         self.serverview.hide()
         self.remove(self.serverview)
