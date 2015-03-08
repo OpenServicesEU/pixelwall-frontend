@@ -2,11 +2,13 @@
 from __future__ import print_function, absolute_import
 
 import dbus
+import dbus.service
 import avahi
 
 from gi.repository import GObject
 
 class Avahi(GObject.GObject):
+
     def __init__(self, stype, loop, *args, **kwargs):
         super(Avahi, self).__init__(*args, **kwargs)
         bus = dbus.SystemBus(mainloop=loop)
@@ -62,3 +64,14 @@ class Avahi(GObject.GObject):
 
     def handle_error(self, *args, **kwargs):
         pass
+
+class Serial(dbus.service.Object):
+
+    def __init__(self, device, loop):
+        bus = dbus.SessionBus(mainloop=loop)
+        bus_name = dbus.service.BusName('at.openservices.pixelwall.serial', bus)
+        super(Serial, self).__init__(bus_name, '/at/openservices/pixelwall/serial')
+
+    @dbus.service.signal('at.openservices.pixelwall.serial')
+    def dataReady(self, data):
+        print("Data signal: %s" % data)

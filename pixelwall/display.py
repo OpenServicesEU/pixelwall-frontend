@@ -9,6 +9,7 @@ from gi.repository import Gtk, Gdk
 from .webview import Browser
 from .servers import ServerView
 from .dbus import Avahi
+from .serial import JsonReader
 from .config import Config
 
 class Display(Gtk.Window):
@@ -17,6 +18,10 @@ class Display(Gtk.Window):
         super(Display, self).__init__(*args, **kwargs)
 
         self.config = Config('/apps/pixelwall')
+        print("%s:%s"% (self.config.tty, self.config.baud))
+        if self.config.tty and self.config.baud:
+            serial = JsonReader(self.config.tty, self.config.baud)
+            serial.start()
         self.set_title("Pixelwall")
         self.connect("delete-event", Gtk.main_quit)
         self.fullscreen()
