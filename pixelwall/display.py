@@ -5,7 +5,6 @@ import os
 import ConfigParser
 
 from gi.repository import Gtk, Gdk
-from dbus.mainloop.glib import DBusGMainLoop
 
 from .webview import Browser
 from .servers import ServerView
@@ -13,16 +12,13 @@ from .dbus import Avahi
 
 class Display(Gtk.Window):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, loop, *args, **kwargs):
         super(Display, self).__init__(*args, **kwargs)
         loop = DBusGMainLoop(set_as_default=True)
         avahi = Avahi('_pixelwall._tcp', loop)
         avahi.connect('newServer', self.add_server)
         avahi.connect('removeServer', self.remove_server)
         self.set_title("Pixelwall")
-        #self.set_gravity(Gdk.Gravity.CENTER)
-        #self.set_position(Gtk.WindowPosition.CENTER)
-        #self.set_default_size(640, 480)
         self.connect("delete-event", Gtk.main_quit)
         self.fullscreen()
 
@@ -70,8 +66,6 @@ class Display(Gtk.Window):
         self.webview = Browser()
         self.add(self.webview)
 
-        #for name, value in props.iteritems():
-            #self.child_set_property(self.content, name, value)
         self.show_all()
         self.webview.load_uri(uri)
 
